@@ -17,26 +17,27 @@ const supabse = createClient(
 );
 
 //Reads the logged-in user session token and attaches their user id.
-async function requireAuth(req,res,next) {
+async function requireAuth(req, res, next) {
+  try {
     const authHeader = req.headers.authorization || "";
-    const token  = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const token = authHeader.replace("Bearer ", "");
+    const { data, error } = await supabase.auth.getUser(token);
 
-    if (!token) return res.status(401).json({ error: "Missing auth token"});
-
-    const { data, error } = await supabase.auth.getuser(token);
     if (error || !data?.user) {
-        return res.status(401).json({ error: "Invalid or expired session"});
-
+      return res.status(401).json({ error: "Unauthorized" });
     }
+
     req.userId = data.user.id;
     next();
+  } catch (err) {
+    res.status(401).json({ error: "Unauthorized" });
+  }
 }
+// Recipes
 
-// Recipies
-
-app.get("/api/recipies", requireAuth, async (req, res) => {
+app.get("/api/recipes", requireAuth, async (req, res) => {
     const { data, error } = await supabase 
-    .from("recipies")
+    .from("recipes")
     .select("*")
     .eq("user_id", req.userId)
     .order("created_at", { ascending: false });
@@ -45,12 +46,12 @@ app.get("/api/recipies", requireAuth, async (req, res) => {
     res.json(data);
 });
 
-app.post("/api/recipies", requireAuth, async (req, res) => {
+app.post("/api/recipes", requireAuth, async (req, res) => {
     const {title, servings, ingredients, instructions } = req.body || {};
     if (!title) return res.status(400).json({ error: "title is required" });
 
     const { data, error } = await supabase
-    .from("recipies")
+    .from("recipes")
     .insert([{ user_id: req.userId, title, servings, ingredients, instructions }])
     .select()
     .single();
