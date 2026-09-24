@@ -7,8 +7,7 @@ import { supabase } from './supabaseClient.js';
 dotenv.config();
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.disable('etag');
 
 const supabse = createClient(
     process.env.SUPABASE_URL,
@@ -113,4 +112,4 @@ app.delete("/api/meal-plan/:id", requireAuth, async (req, res) =>{
 });
 
 const PORT = process.env.PORT || 5055;
-app.listen(PORT, () => console.log('Mealbox backend running on :${PORT}'));
+app.listen(PORT, () => console.log(`Mealbox backend running on :${PORT}`));
